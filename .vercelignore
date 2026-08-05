@@ -1,0 +1,7 @@
+# 不随部署上传的文件
+.env
+.env.local
+.env*.local
+.workbuddy
+scripts/_*.ts
+README.md

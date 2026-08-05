@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 浅色莫兰迪绿主题（沿用 WorkBuddy） */
+    --background: 152 33% 97%;
+    --foreground: 158 28% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 158 28% 14%;
+    --primary: 158 35% 50%; /* #5BA88A */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 28% 92%;
+    --secondary-foreground: 158 25% 24%;
+    --muted: 152 24% 94%;
+    --muted-foreground: 158 14% 42%;
+    --accent: 155 38% 91%;
+    --accent-foreground: 158 30% 22%;
+    --border: 150 24% 87%;
+    --input: 150 24% 87%;
+    --ring: 158 45% 55%;
+    --radius: 0.75rem;
+
+    /* 健康状态色 */
+    --healthy: 152 48% 40%;
+    --warn: 39 88% 52%;
+    --risk: 4 72% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .card-surface {
+    @apply rounded-xl border border-border bg-card shadow-sm;
+  }
+
+  /* Markdown 报告正文样式 */
+  .markdown-body h1 {
+    @apply mb-3 text-xl font-bold;
+  }
+  .markdown-body h2 {
+    @apply mb-2 mt-6 border-b border-border pb-1 text-base font-semibold text-[hsl(var(--primary))];
+  }
+  .markdown-body h3 {
+    @apply mb-2 mt-4 text-sm font-semibold;
+  }
+  .markdown-body p {
+    @apply my-2;
+  }
+  .markdown-body ul {
+    @apply my-2 list-disc space-y-1 pl-5;
+  }
+  .markdown-body li > ul {
+    @apply mt-1;
+  }
+  .markdown-body strong {
+    @apply font-semibold text-foreground;
+  }
+  .markdown-body blockquote {
+    @apply my-3 border-l-2 border-[hsl(var(--primary)/0.5)] bg-muted/60 px-3 py-2 text-xs text-muted-foreground;
+  }
+  .markdown-body hr {
+    @apply my-4 border-border;
+  }
+}

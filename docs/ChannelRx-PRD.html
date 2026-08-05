@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataRecord ChannelRx — 产品设计书 (PRD)</title>
+<style>
+  :root {
+    --bg: #F5F8F5;
+    --surface: #FFFFFF;
+    --surface-2: #FAFCFA;
+    --border: #E3EAE3;
+    --border-strong: #C9D6C9;
+    --text: #1A2B1F;
+    --text-2: #4A5A4F;
+    --text-3: #7A8A7F;
+    --primary: #5BA88A;
+    --primary-dark: #3F8A6E;
+    --primary-soft: #E8F3EC;
+    --accent: #7DD3A0;
+    --warning: #D97706;
+    --warning-soft: #FEF3E2;
+    --danger: #DC2626;
+    --danger-soft: #FEE8E8;
+    --info: #2563EB;
+    --info-soft: #E6EEFE;
+    --shadow-sm: 0 1px 2px rgba(26,43,31,0.04);
+    --shadow: 0 4px 16px rgba(26,43,31,0.06);
+    --shadow-lg: 0 12px 40px rgba(26,43,31,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== 顶部封面 ===== */
+  .cover {
+    background: linear-gradient(135deg, #5BA88A 0%, #3F8A6E 60%, #2E6B55 100%);
+    color: #fff;
+    padding: 72px 48px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: "";
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 360px; height: 360px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .cover::after {
+    content: "";
+    position: absolute;
+    bottom: -80px; left: 40%;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .cover-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(6px);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .cover h1 {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  .cover .subtitle {
+    font-size: 18px;
+    opacity: 0.9;
+    font-weight: 400;
+    margin-bottom: 36px;
+    position: relative;
+    z-index: 1;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 36px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+  }
+  .cover-meta div {
+    font-size: 13px;
+  }
+  .cover-meta .label {
+    opacity: 0.7;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .cover-meta .value {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* ===== 主体布局 ===== */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    max-width: 1320px;
+    margin: 0 auto;
+    gap: 0;
+  }
+
+  /* ===== 侧边目录 ===== */
+  .toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 32px 24px;
+    border-right: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .toc h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-3);
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .toc ol {
+    list-style: none;
+    counter-reset: toc;
+  }
+  .toc li {
+    counter-increment: toc;
+    margin-bottom: 2px;
+  }
+  .toc a {
+    display: block;
+    padding: 7px 12px;
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: 13.5px;
+    border-radius: 6px;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    color: var(--text-3);
+    font-size: 11px;
+    margin-right: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .toc a:hover {
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+  }
+  .toc a.sub {
+    padding-left: 32px;
+    font-size: 12.5px;
+    color: var(--text-3);
+  }
+  .toc a.sub::before { content: "·"; margin-right: 8px; }
+
+  /* ===== 内容区 ===== */
+  .content {
+    padding: 48px 56px 120px;
+    min-width: 0;
+  }
+  section {
+    margin-bottom: 64px;
+    scroll-margin-top: 24px;
+  }
+  .section-num {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+  h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  h3 {
+    font-size: 19px;
+    font-weight: 600;
+    margin-top: 32px;
+    margin-bottom: 14px;
+    color: var(--text);
+    padding-left: 12px;
+    border-left: 3px solid var(--primary);
+  }
+  h4 {
+    font-size: 15.5px;
+    font-weight: 600;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  p {
+    margin-bottom: 14px;
+    color: var(--text-2);
+  }
+  ul, ol {
+    margin: 10px 0 16px 4px;
+    color: var(--text-2);
+  }
+  li {
+    margin-bottom: 6px;
+    padding-left: 4px;
+  }
+  strong { color: var(--text); font-weight: 600; }
+  code {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 13px;
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* ===== 卡片 ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin: 16px 0;
+  }
+  .card-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: "";
+    width: 6px; height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+  }
+
+  /* ===== 表格 ===== */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  thead {
+    background: var(--surface-2);
+  }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-2);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-2); }
+  .mono { font-family: "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--primary-dark); }
+
+  /* ===== 代码块 ===== */
+  pre {
+    background: #1A2B1F;
+    color: #E8F3EC;
+    padding: 18px 22px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 16px 0;
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+  .code-comment { color: #7A8A7F; }
+  .code-key { color: #7DD3A0; }
+  .code-str { color: #FCD34D; }
+
+  /* ===== 标签 ===== */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .badge-green { background: var(--primary-soft); color: var(--primary-dark); }
+  .badge-yellow { background: var(--warning-soft); color: var(--warning); }
+  .badge-red { background: var(--danger-soft); color: var(--danger); }
+  .badge-blue { background: var(--info-soft); color: var(--info); }
+  .badge-gray { background: #EEF1EE; color: var(--text-3); }
+
+  /* ===== 痛点卡片网格 ===== */
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .pain-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    border-top: 3px solid var(--danger);
+  }
+  .pain-card .icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .pain-card h4 {
+    margin-top: 0;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .pain-card p { font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+  .pain-card .example {
+    background: var(--danger-soft);
+    color: var(--danger);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: "SF Mono", monospace;
+    margin-top: 10px;
+  }
+
+  /* ===== 流程图 ===== */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 24px 0;
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .flow-step {
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(91,168,138,0.25);
+    text-align: center;
+    min-width: 120px;
+  }
+  .flow-arrow {
+    color: var(--primary);
+    font-size: 20px;
+    font-weight: 300;
+  }
+
+  /* ===== 数据来源卡片 ===== */
+  .source-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .source-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .source-card .source-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .source-card .source-num {
+    width: 28px; height: 28px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .source-card h4 { margin: 0; font-size: 15px; }
+  .source-card .from {
+    font-size: 12px;
+    color: var(--text-3);
+    background: var(--surface-2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: inline-block;
+  }
+  .source-card .desc {
+    font-size: 13px;
+    color: var(--text-2);
+    margin-bottom: 10px;
+  }
+
+  /* ===== 评分模型 ===== */
+  .score-formula {
+    background: linear-gradient(135deg, var(--primary-soft) 0%, #F0F8F2 100%);
+    border: 1px solid rgba(91,168,138,0.3);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    margin: 20px 0;
+  }
+  .score-formula .total {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+  }
+  .score-formula .formula {
+    font-size: 14px;
+    color: var(--text-2);
+    font-family: "SF Mono", monospace;
+  }
+  .score-bars {
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+    align-items: stretch;
+  }
+  .score-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+  .score-bar .weight {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .score-bar .label {
+    font-size: 13px;
+    color: var(--text-2);
+    margin: 4px 0;
+    font-weight: 500;
+  }
+  .score-bar .desc {
+    font-size: 11.5px;
+    color: var(--text-3);
+  }
+
+  /* ===== 模块卡片 ===== */
+  .module-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+  .module-head {
+    background: var(--surface-2);
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .module-icon {
+    width: 36px; height: 36px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .module-head h3 {
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 17px;
+  }
+  .module-body { padding: 22px 24px; }
+
+  /* ===== 架构图容器 ===== */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin: 20px 0;
+  }
+
+  /* ===== MVP 范围 ===== */
+  .mvp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .mvp-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+  }
+  .mvp-col.do { border-top: 3px solid var(--primary); }
+  .mvp-col.dont { border-top: 3px solid var(--text-3); }
+  .mvp-col h4 {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mvp-list { list-style: none; margin: 12px 0 0; }
+  .mvp-list li {
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 13.5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .mvp-list li:last-child { border-bottom: none; }
+  .mvp-list .check { color: var(--primary); font-weight: 700; }
+  .mvp-list .cross { color: var(--text-3); font-weight: 700; }
+
+  /* ===== 开发计划时间线 ===== */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+    margin: 24px 0;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 11px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border-strong);
+  }
+  .phase {
+    position: relative;
+    margin-bottom: 24px;
+  }
+  .phase::before {
+    content: "";
+    position: absolute;
+    left: -27px;
+    top: 6px;
+    width: 14px; height: 14px;
+    background: var(--primary);
+    border: 3px solid var(--surface);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .phase-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .phase-duration {
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+    font-size: 11.5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .phase-deliverable {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+  }
+  .phase-deliverable .label {
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .phase-deliverable ul { margin: 6px 0 0; }
+  .phase-deliverable li { font-size: 13px; }
+
+  /* ===== 决策点 ===== */
+  .decision-list {
+    background: linear-gradient(135deg, #E8F3EC 0%, #F4FAF6 100%);
+    border: 1px solid #B8DCC4;
+    border-radius: 14px;
+    padding: 24px;
+    margin: 20px 0;
+  }
+  .decision-list h3 {
+    margin-top: 0;
+    border-left-color: var(--primary);
+    color: var(--primary-dark);
+  }
+  .decision-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--primary);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .decision-item:last-child { margin-bottom: 0; }
+  .decision-q {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  .decision-q::before {
+    content: "✓";
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    text-align: center;
+    line-height: 18px;
+    font-size: 12px;
+    margin-right: 8px;
+    font-weight: 700;
+  }
+  .decision-opts {
+    font-size: 13px;
+    color: var(--text-2);
+    margin-top: 6px;
+  }
+  .decision-confirmed {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .decision-reason {
+    font-size: 12.5px;
+    color: var(--text-3);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    font-style: italic;
+  }
+  .decision-opts .opt {
+    display: inline-block;
+    background: var(--surface-2);
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-right: 6px;
+    margin-top: 4px;
+    font-size: 12.5px;
+    border: 1px solid var(--border);
+  }
+
+  /* ===== ER 图样式 ===== */
+  .er-table {
+    fill: var(--surface);
+    stroke: var(--border-strong);
+    stroke-width: 1;
+  }
+  .er-table-head {
+    fill: var(--primary);
+  }
+  .er-table-head-text {
+    fill: #fff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .er-field {
+    fill: var(--text-2);
+    font-size: 11px;
+  }
+  .er-pk { font-weight: 700; fill: var(--primary-dark); }
+  .er-fk { fill: var(--info); }
+  .er-line {
+    stroke: var(--border-strong);
+    stroke-width: 1.5;
+    fill: none;
+  }
+
+  /* ===== 引用块 ===== */
+  .quote {
+    border-left: 3px solid var(--primary);
+    background: var(--primary-soft);
+    padding: 14px 20px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+    color: var(--text-2);
+    font-style: italic;
+  }
+
+  .note {
+    background: var(--info-soft);
+    border-left: 3px solid var(--info);
+    padding: 12px 18px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    color: var(--text-2);
+    margin: 14px 0;
+  }
+
+  /* ===== 页脚 ===== */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 56px;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 12px;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  /* 响应式 */
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 1fr; }
+    .toc { display: none; }
+    .content { padding: 32px 24px 80px; }
+    .cover { padding: 48px 24px; }
+    .cover h1 { font-size: 32px; }
+    .pain-grid, .source-grid, .mvp-grid, .score-bars { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== 封面 ========== -->
+<header class="cover">
+  <span class="cover-tag">PRODUCT REQUIREMENTS DOCUMENT · V1.1</span>
+  <h1>DataRecord ChannelRx</h1>
+  <p class="subtitle">医疗器械渠道智能分析平台 — 把分散的渠道数据变成可量化的经销商健康度</p>
+  <div class="cover-meta">
+    <div>
+      <div class="label">文档类型</div>
+      <div class="value">产品设计书 PRD</div>
+    </div>
+    <div>
+      <div class="label">产品阶段</div>
+      <div class="value">MVP 规划</div>
+    </div>
+    <div>
+      <div class="label">目标域名</div>
+      <div class="value">datarecord.me</div>
+    </div>
+    <div>
+      <div class="label">作者</div>
+      <div class="value">Ivy Wu</div>
+    </div>
+    <div>
+      <div class="label">日期</div>
+      <div class="value">2026-07-29</div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ========== 侧边目录 ========== -->
+  <nav class="toc">
+    <h3>文档目录</h3>
+    <ol>
+      <li><a href="#overview">产品概述</a></li>
+      <li><a href="#background">背景与业务痛点</a></li>
+      <li><a href="#goals">产品目标</a></li>
+      <li><a href="#model">核心业务模型</a></li>
+      <li><a href="#data">数据输入设计</a></li>
+      <li><a href="#scoring">经销商健康评分模型</a></li>
+      <li><a href="#modules">系统功能模块</a></li>
+      <li><a href="#mvp">MVP 开发范围</a></li>
+      <li><a href="#tech">技术方案</a></li>
+      <li><a href="#database">数据库设计</a></li>
+      <li><a href="#plan">开发计划</a></li>
+      <li><a href="#decisions">待确认决策点</a></li>
+    </ol>
+  </nav>
+
+  <!-- ========== 主内容 ========== -->
+  <main class="content">
+
+    <!-- ===== 1. 产品概述 ===== -->
+    <section id="overview">
+      <span class="section-num">01</span>
+      <h2>产品概述</h2>
+
+      <div class="card">
+        <div class="card-title">产品定位</div>
+        <p><strong>DataRecord ChannelRx</strong> 是一款医疗器械渠道智能分析平台。</p>
+        <p>通过整合医疗器械企业内部采购数据、经销商出库数据、医院终端流向数据以及省级集采数据，帮助企业实时掌握经销商渠道健康状态，识别库存积压、异常流向、销售风险，并通过 AI 自动生成渠道分析报告。</p>
+      </div>
+
+      <h3>核心价值主张</h3>
+      <div class="quote">
+        该产品不是简单的数据展示工具。核心价值在于：将医疗器械渠道管理过程中分散的数据，转化为可量化的经销商健康评价体系，帮助企业提前发现库存风险、渠道异常和终端销售变化。
+      </div>
+    </section>
+
+    <!-- ===== 2. 背景与痛点 ===== -->
+    <section id="background">
+      <span class="section-num">02</span>
+      <h2>背景与业务痛点</h2>
+
+      <h3>行业背景</h3>
+      <p>医疗器械行业高度依赖经销商渠道。企业通常拥有以下五类数据：厂家销售数据、经销商采购数据、经销商出库数据、医院终端入院数据、省级集采数据。但这些数据来源分散，格式不统一，需要大量人工 Excel 整理。</p>
+
+      <h3>当前痛点</h3>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="icon">🔍</div>
+          <h4>无法判断经销商真实销售状态</h4>
+          <p>厂家知道"经销商买了多少货"，但不知道"货是否真正销售到医院"。</p>
+        </div>
+        <div class="pain-card">
+          <div class="icon">📦</div>
+          <h4>库存风险难以及时发现</h4>
+          <p>经销商持续采购增长，但出库下降，可能意味着产品积压、需求下降或库存过高。</p>
+          <div class="example">采购：100 → 120 → 150<br>出库：100 → 70 → 30</div>
+        </div>
+        <div class="pain-card">
+          <div class="icon">⚠️</div>
+          <h4>数据异常难发现</h4>
+          <p>出库量远大于采购量，可能存在跨区域窜货、数据遗漏或统计错误。</p>
+          <div class="example">采购：100 / 出库：180</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3. 产品目标 ===== -->
+    <section id="goals">
+      <span class="section-num">03</span>
+      <h2>产品目标</h2>
+      <p>建立一个渠道健康度管理系统，实现以下数据闭环：</p>
+
+      <div class="flow">
+        <div class="flow-step">原始业务数据</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">自动计算<br>渠道指标</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">经销商<br>健康评分</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">风险识别</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">AI 生成<br>运营建议</div>
+      </div>
+    </section>
+
+    <!-- ===== 4. 核心业务模型 ===== -->
+    <section id="model">
+      <span class="section-num">04</span>
+      <h2>核心业务模型</h2>
+
+      <h3>产品维度</h3>
+      <p>目前支持两类产品独立分析：<strong>超声刀</strong> 与 <strong>吻合器</strong>。</p>
+      <div class="note">同一个经销商在不同产品维度下可能呈现不同健康状态。例如 A 公司超声刀健康，但吻合器存在风险。这是 MVP 阶段的产品分类策略，后续可扩展。</div>
+    </section>
+
+    <!-- ===== 5. 数据输入设计 ===== -->
+    <section id="data">
+      <span class="section-num">05</span>
+      <h2>数据输入设计</h2>
+      <p>系统对接四类数据来源，每类对应独立的数据表与导入流程。</p>
+
+      <div class="source-grid">
+        <div class="source-card">
+          <div class="source-head">
+            <div class="source-num">1</div>
+            <h4>厂家采购数据</h4>
+          </div>
+          <span class="from">来源：企业 ERP / 销售台账</span>
+          <p class="desc">记录厂家 → 经销商的采购流向。</p>
+          <pre><code><span class="code-key">dealer_id</span>
+<span class="code-key">dealer_name</span>
+<span class="code-key">product_type</span>
+<span class="code-key">month</span>
+<span class="code-key">purchase_quantity</span></code></pre>
+        </div>
+
+        <div class="source-card">
+          <div class="source-head">
+            <div class="source-num">2</div>
+            <h4>经销商出库数据 <span class="badge badge-blue">核心</span></h4>
+          </div>
+          <span class="from">来源：销售发票 / 出库单 / 进销存明细</span>
+          <p class="desc">用于判断产品是否真正从经销商流向医院。</p>
+          <pre><code><span class="code-key">dealer_id</span>
+<span class="code-key">hospital_name</span>
+<span class="code-key">product_type</span>
+<span class="code-key">month</span>
+<span class="code-key">shipment_quantity</span>
+<span class="code-key">source_type</span> <span class="code-comment">// invoice|delivery_note|inventory_report</span></code></pre>
+        </div>
+
+        <div class="source-card">
+          <div class="source-head">
+            <div class="source-num">3</div>
+            <h4>医院终端入院数据</h4>
+          </div>
+          <span class="from">来源：医院入院发票</span>
+          <p class="desc">判断产品是否真正进入终端。</p>
+          <pre><code><span class="code-key">hospital_name</span>
+<span class="code-key">dealer_name</span>
+<span class="code-key">product_type</span>
+<span class="code-key">month</span>
+<span class="code-key">quantity</span>
+<span class="code-key">province</span></code></pre>
+        </div>
+
+        <div class="source-card">
+          <div class="source-head">
+            <div class="source-num">4</div>
+            <h4>省级集采数据</h4>
+          </div>
+          <span class="from">来源：省级集采平台</span>
+          <p class="desc">辅助确认终端覆盖、分析区域销售。<strong>注意：配送商 ≠ 经销商</strong></p>
+          <pre><code><span class="code-key">hospital_name</span>
+<span class="code-key">delivery_company</span>
+<span class="code-key">province</span>
+<span class="code-key">product_type</span>
+<span class="code-key">month</span>
+<span class="code-key">quantity</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 6. 健康评分模型 ===== -->
+    <section id="scoring">
+      <span class="section-num">06</span>
+      <h2>经销商健康评分模型</h2>
+
+      <div class="note">
+        <strong>设计原则（V1.1 调整）：</strong>健康评分 <strong>只基于流向健康度</strong>（100 分制）。
+        采购稳定性、终端覆盖度降级为<strong>经销商详情页的展示指标</strong>，不参与总评分计算。
+        这样能让评分聚焦于"货是否真正流向终端"这一核心业务问题，避免多维度权重稀释核心信号。
+      </div>
+
+      <h3>总评分公式</h3>
+      <div class="score-formula">
+        <div class="total">Health Score = Flow Score</div>
+        <div class="formula">健康评分 = 流向健康度评分（0-100）</div>
+      </div>
+
+      <h3>核心指标：出库比例</h3>
+      <div class="card">
+        <div class="card-title">计算公式</div>
+        <pre><code><span class="code-key">出库比例</span> r = 经销商销售出库数量 / 厂家采购数量
+<span class="code-key">偏离度</span>  dev = |r - 1.0|</code></pre>
+        <p style="margin-top:10px;font-size:13px;">偏离度衡量出库比例偏离 100%（理想状态）的程度，是评分的唯一输入。</p>
+      </div>
+
+      <h3>评分映射函数</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>出库比例区间</th><th>偏离度 dev</th><th>评分公式</th><th>得分区间</th><th>状态</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="mono">80% – 120%</span></td>
+              <td><span class="mono">dev ≤ 0.2</span></td>
+              <td><span class="mono">score = 100 − dev × 50</span></td>
+              <td>90 – 100</td>
+              <td><span class="badge badge-green">健康</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono">70% – 80%<br>120% – 130%</span></td>
+              <td><span class="mono">0.2 &lt; dev ≤ 0.3</span></td>
+              <td><span class="mono">score = 90 − (dev − 0.2) × 300</span></td>
+              <td>60 – 89</td>
+              <td><span class="badge badge-yellow">预警</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono">&lt; 70%<br>&gt; 130%</span></td>
+              <td><span class="mono">dev &gt; 0.3</span></td>
+              <td><span class="mono">score = max(0, 60 − (dev − 0.3) × 200)</span></td>
+              <td>0 – 59</td>
+              <td><span class="badge badge-red">异常</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>评分示例</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>出库比例 r</th><th>偏离度 dev</th><th>评分</th><th>状态</th><th>可能原因</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">100%</span></td><td><span class="mono">0.0</span></td><td><strong>100</strong></td><td><span class="badge badge-green">健康</span></td><td>理想流转</td></tr>
+            <tr><td><span class="mono">95%</span></td><td><span class="mono">0.05</span></td><td><strong>97</strong></td><td><span class="badge badge-green">健康</span></td><td>正常流转</td></tr>
+            <tr><td><span class="mono">80% / 120%</span></td><td><span class="mono">0.2</span></td><td><strong>90</strong></td><td><span class="badge badge-green">健康</span></td><td>健康边界</td></tr>
+            <tr><td><span class="mono">75% / 125%</span></td><td><span class="mono">0.25</span></td><td><strong>75</strong></td><td><span class="badge badge-yellow">预警</span></td><td>轻微库存累积 / 数据偏差</td></tr>
+            <tr><td><span class="mono">70% / 130%</span></td><td><span class="mono">0.3</span></td><td><strong>60</strong></td><td><span class="badge badge-yellow">预警</span></td><td>预警边界</td></tr>
+            <tr><td><span class="mono">60% / 140%</span></td><td><span class="mono">0.4</span></td><td><strong>40</strong></td><td><span class="badge badge-red">异常</span></td><td>库存积压 / 窜货迹象</td></tr>
+            <tr><td><span class="mono">45% / 155%</span></td><td><span class="mono">0.55</span></td><td><strong>10</strong></td><td><span class="badge badge-red">异常</span></td><td>严重积压 / 严重窜货</td></tr>
+            <tr><td><span class="mono">≤ 40% / ≥ 160%</span></td><td><span class="mono">≥ 0.6</span></td><td><strong>0</strong></td><td><span class="badge badge-red">异常</span></td><td>极端异常</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>状态阈值</h3>
+      <div class="score-bars">
+        <div class="score-bar" style="border-top: 3px solid var(--primary);">
+          <div class="weight" style="color:var(--primary);">≥ 90</div>
+          <div class="label">健康</div>
+          <div class="desc">出库比例 80%-120%，正常流转</div>
+        </div>
+        <div class="score-bar" style="border-top: 3px solid var(--warning);">
+          <div class="weight" style="color:var(--warning);">60 – 89</div>
+          <div class="label">预警</div>
+          <div class="desc">出库比例 70-80% / 120-130%，需关注</div>
+        </div>
+        <div class="score-bar" style="border-top: 3px solid var(--danger);">
+          <div class="weight" style="color:var(--danger);">&lt; 60</div>
+          <div class="label">异常</div>
+          <div class="desc">出库比例 &lt;70% / &gt;130%，需立即处理</div>
+        </div>
+      </div>
+
+      <h3>详情页补充展示指标（不参与评分）</h3>
+      <div class="card">
+        <p style="margin-bottom:10px;">以下两项指标在经销商详情页单独展示，用于辅助运营判断，<strong>不计入健康评分</strong>：</p>
+        <div class="table-wrap" style="margin-top:8px;">
+          <table>
+            <thead><tr><th>展示指标</th><th>关注维度</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>采购稳定性</strong></td>
+                <td>月采购趋势 / 环比变化 / 连续无采购月份</td>
+                <td>判断经销商进货节奏是否平稳</td>
+              </tr>
+              <tr>
+                <td><strong>终端覆盖度</strong></td>
+                <td>医院覆盖数量 / 入院数量 / 渗透比例</td>
+                <td>判断经销商出库是否真正进入医院终端</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 7. 功能模块 ===== -->
+    <section id="modules">
+      <span class="section-num">07</span>
+      <h2>系统功能模块</h2>
+
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon">01</div>
+          <h3>首页 Dashboard</h3>
+        </div>
+        <div class="module-body">
+          <p><strong>目标：</strong>快速了解全国渠道状态。</p>
+          <h4>总览卡片</h4>
+          <p>经销商数量 / 健康数量 / 预警数量 / 异常数量</p>
+          <h4>产品筛选</h4>
+          <p>全部 / 超声刀 / 吻合器</p>
+          <h4>区域分析</h4>
+          <p>省份健康状态可视化（江苏 🟢 / 浙江 🟡 / 广东 🔴）</p>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon">02</div>
+          <h3>经销商列表</h3>
+        </div>
+        <div class="module-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>经销商</th><th>产品</th><th>评分</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr><td>A 公司</td><td>超声刀</td><td>85</td><td><span class="badge badge-green">健康</span></td></tr>
+                <tr><td>B 公司</td><td>吻合器</td><td>55</td><td><span class="badge badge-red">风险</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>筛选支持：</strong>产品 / 省份 / 风险等级</p>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon">03</div>
+          <h3>经销商详情页</h3>
+        </div>
+        <div class="module-body">
+          <p>示例：XX 医疗有限公司 · 健康评分 <strong>78/100</strong> <span class="badge badge-yellow">🟡 关注</span></p>
+          <h4>产品分析（按产品维度独立展示）</h4>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>产品</th><th>采购趋势</th><th>出库比例</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr><td>超声刀</td><td>📈 上升</td><td>95%</td><td><span class="badge badge-green">健康</span></td></tr>
+                <tr><td>吻合器</td><td>📈 上升</td><td>45%</td><td><span class="badge badge-red">库存风险</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h4>趋势图</h4>
+          <p>月度展示：采购数量 / 出库数量 / 医院流向数量 — 帮助发现"采购增加但销售下降"的异常模式。</p>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon">04</div>
+          <h3>风险预警</h3>
+        </div>
+        <div class="module-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>风险类型</th><th>触发条件</th></tr></thead>
+              <tbody>
+                <tr><td><span class="badge badge-red">库存积压风险</span></td><td><span class="mono">连续 3 个月 出库比例 &lt; 70%</span></td></tr>
+                <tr><td><span class="badge badge-red">异常销售风险</span></td><td><span class="mono">出库比例 &gt; 130%</span></td></tr>
+                <tr><td><span class="badge badge-yellow">销售下降风险</span></td><td><span class="mono">连续下降 + 采购减少</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon">05</div>
+          <h3>AI 渠道分析报告</h3>
+        </div>
+        <div class="module-body">
+          <p><strong>功能：</strong>点击"生成分析报告"，AI 根据计算结果生成周报 / 月报。</p>
+          <div class="quote">
+            XX 区域整体渠道健康度良好，但 3 家经销商吻合器产品存在库存积压风险。其中 A 公司连续 3 个月采购增长，但终端流向下降，建议关注库存情况并调整供货计划。
+          </div>
+          <div class="note"><strong>边界：</strong>AI 负责总结、解释、建议，<strong>不负责计算</strong>。所有数值由确定性规则计算后传入 AI 上下文。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 8. MVP 范围 ===== -->
+    <section id="mvp">
+      <span class="section-num">08</span>
+      <h2>MVP 开发范围</h2>
+
+      <div class="mvp-grid">
+        <div class="mvp-col do">
+          <h4><span class="badge badge-green">DO</span> 第一阶段必须完成</h4>
+          <ul class="mvp-list">
+            <li><span class="check">✓</span> 模拟数据生成脚本</li>
+            <li><span class="check">✓</span> 数据库设计 & 表结构</li>
+            <li><span class="check">✓</span> Dashboard 首页</li>
+            <li><span class="check">✓</span> 经销商列表</li>
+            <li><span class="check">✓</span> 经销商详情页</li>
+            <li><span class="check">✓</span> 健康评分计算引擎</li>
+            <li><span class="check">✓</span> 风险识别规则</li>
+            <li><span class="check">✓</span> AI 报告生成</li>
+          </ul>
+        </div>
+        <div class="mvp-col dont">
+          <h4><span class="badge badge-gray">DEFER</span> 暂不开发</h4>
+          <ul class="mvp-list">
+            <li><span class="cross">✗</span> 用户权限系统</li>
+            <li><span class="cross">✗</span> 多租户</li>
+            <li><span class="cross">✗</span> 复杂审批流程</li>
+            <li><span class="cross">✗</span> 自动连接企业 ERP</li>
+            <li><span class="cross">✗</span> 自动爬取集采平台</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 9. 技术方案 ===== -->
+    <section id="tech">
+      <span class="section-num">09</span>
+      <h2>技术方案</h2>
+
+      <h3>9.1 技术栈选型</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>层级</th><th>技术选型</th><th>选型理由</th></tr></thead>
+          <tbody>
+            <tr><td>前端框架</td><td>Next.js 14 (App Router, Turbopack)</td><td>与 WorkBuddy 项目复用经验，SSR + 静态生成兼顾</td></tr>
+            <tr><td>语言</td><td>TypeScript</td><td>类型安全，业务规则复杂需强约束</td></tr>
+            <tr><td>样式</td><td>Tailwind CSS</td><td>快速迭代，符合 SaaS 浅色风格</td></tr>
+            <tr><td>组件库</td><td>shadcn/ui</td><td>可定制、不锁定，与 Tailwind 协同</td></tr>
+            <tr><td>图表</td><td>ECharts</td><td>趋势图、区域地图、堆叠柱状图</td></tr>
+            <tr><td>后端 / 数据库</td><td>Supabase (PostgreSQL)</td><td>与 WorkBuddy 一致，自带 RLS 与 API</td></tr>
+            <tr><td>AI</td><td>DeepSeek API (主) / OpenAI (备)</td><td>成本敏感，DeepSeek 性价比高</td></tr>
+            <tr><td>部署</td><td>Vercel</td><td>Next.js 原生支持，一键部署</td></tr>
+            <tr><td>域名</td><td>datarecord.me</td><td>独立产品域名，便于面试展示</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>9.2 系统架构</h3>
+      <div class="arch-diagram">
+        <svg viewBox="0 0 820 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+          <defs>
+            <linearGradient id="layerGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#E8F3EC"/>
+              <stop offset="100%" stop-color="#F0F8F2"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 数据源层 -->
+          <rect x="20" y="20" width="780" height="80" rx="10" fill="url(#layerGrad)" stroke="#C9D6C9"/>
+          <text x="40" y="42" font-size="11" font-weight="700" fill="#5BA88A" letter-spacing="0.1em">DATA SOURCES · 数据源层</text>
+          <rect x="40" y="55" width="170" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="125" y="76" font-size="12" text-anchor="middle" fill="#1A2B1F">厂家采购数据</text>
+          <rect x="225" y="55" width="170" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="310" y="76" font-size="12" text-anchor="middle" fill="#1A2B1F">经销商出库数据</text>
+          <rect x="410" y="55" width="170" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="495" y="76" font-size="12" text-anchor="middle" fill="#1A2B1F">医院终端入院数据</text>
+          <rect x="595" y="55" width="180" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="685" y="76" font-size="12" text-anchor="middle" fill="#1A2B1F">省级集采数据</text>
+
+          <!-- 数据导入箭头 -->
+          <line x1="410" y1="105" x2="410" y2="135" stroke="#5BA88A" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="420" y="125" font-size="10" fill="#5BA88A">CSV / 手动导入</text>
+
+          <!-- 数据存储层 -->
+          <rect x="20" y="140" width="780" height="70" rx="10" fill="#E6EEFE" stroke="#B5C7F0"/>
+          <text x="40" y="162" font-size="11" font-weight="700" fill="#2563EB" letter-spacing="0.1em">STORAGE · Supabase PostgreSQL</text>
+          <rect x="40" y="175" width="120" height="28" rx="6" fill="#FFFFFF" stroke="#B5C7F0"/>
+          <text x="100" y="194" font-size="11" text-anchor="middle" fill="#1A2B1F">raw_* 原始表</text>
+          <rect x="170" y="175" width="140" height="28" rx="6" fill="#FFFFFF" stroke="#B5C7F0"/>
+          <text x="240" y="194" font-size="11" text-anchor="middle" fill="#1A2B1F">dealers / hospitals</text>
+          <rect x="320" y="175" width="140" height="28" rx="6" fill="#FFFFFF" stroke="#B5C7F0"/>
+          <text x="390" y="194" font-size="11" text-anchor="middle" fill="#1A2B1F">health_scores</text>
+          <rect x="470" y="175" width="120" height="28" rx="6" fill="#FFFFFF" stroke="#B5C7F0"/>
+          <text x="530" y="194" font-size="11" text-anchor="middle" fill="#1A2B1F">risk_alerts</text>
+          <rect x="600" y="175" width="175" height="28" rx="6" fill="#FFFFFF" stroke="#B5C7F0"/>
+          <text x="687" y="194" font-size="11" text-anchor="middle" fill="#1A2B1F">ai_reports</text>
+
+          <!-- 计算层箭头 -->
+          <line x1="410" y1="215" x2="410" y2="245" stroke="#5BA88A" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- 计算引擎层 -->
+          <rect x="20" y="250" width="780" height="70" rx="10" fill="#FEF3E2" stroke="#F0D9A8"/>
+          <text x="40" y="272" font-size="11" font-weight="700" fill="#D97706" letter-spacing="0.1em">COMPUTE · 计算引擎层 (Server Actions / Edge Functions)</text>
+          <rect x="40" y="285" width="180" height="28" rx="6" fill="#FFFFFF" stroke="#F0D9A8"/>
+          <text x="130" y="304" font-size="11" text-anchor="middle" fill="#1A2B1F">评分计算 (手动触发)</text>
+          <rect x="235" y="285" width="160" height="28" rx="6" fill="#FFFFFF" stroke="#F0D9A8"/>
+          <text x="315" y="304" font-size="11" text-anchor="middle" fill="#1A2B1F">风险规则识别</text>
+          <rect x="410" y="285" width="170" height="28" rx="6" fill="#FFFFFF" stroke="#F0D9A8"/>
+          <text x="495" y="304" font-size="11" text-anchor="middle" fill="#1A2B1F">趋势 / 环比计算</text>
+          <rect x="595" y="285" width="180" height="28" rx="6" fill="#FFFFFF" stroke="#F0D9A8"/>
+          <text x="685" y="304" font-size="11" text-anchor="middle" fill="#1A2B1F">AI 报告生成调用</text>
+
+          <!-- 应用层箭头 -->
+          <line x1="410" y1="325" x2="410" y2="355" stroke="#5BA88A" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- 前端应用层 -->
+          <rect x="20" y="360" width="780" height="80" rx="10" fill="url(#layerGrad)" stroke="#C9D6C9"/>
+          <text x="40" y="382" font-size="11" font-weight="700" fill="#5BA88A" letter-spacing="0.1em">PRESENTATION · Next.js 前端应用层</text>
+          <rect x="40" y="395" width="140" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="110" y="416" font-size="12" text-anchor="middle" fill="#1A2B1F">Dashboard</text>
+          <rect x="195" y="395" width="140" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="265" y="416" font-size="12" text-anchor="middle" fill="#1A2B1F">经销商列表</text>
+          <rect x="350" y="395" width="140" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="420" y="416" font-size="12" text-anchor="middle" fill="#1A2B1F">经销商详情</text>
+          <rect x="505" y="395" width="140" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="575" y="416" font-size="12" text-anchor="middle" fill="#1A2B1F">风险预警中心</text>
+          <rect x="660" y="395" width="115" height="34" rx="6" fill="#FFFFFF" stroke="#C9D6C9"/>
+          <text x="717" y="416" font-size="12" text-anchor="middle" fill="#1A2B1F">AI 报告</text>
+
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#5BA88A"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <h3>9.3 项目目录结构</h3>
+      <pre><code><span class="code-comment">channelrx/</span>
+├── app/
+│   ├── layout.tsx              <span class="code-comment"># 根布局</span>
+│   ├── page.tsx                <span class="code-comment"># 重定向到 /dashboard</span>
+│   ├── dashboard/              <span class="code-comment"># 首页总览</span>
+│   ├── dealers/                <span class="code-comment"># 经销商列表 + 详情</span>
+│   │   └── [id]/
+│   ├── risks/                  <span class="code-comment"># 风险预警中心</span>
+│   ├── reports/                <span class="code-comment"># AI 报告</span>
+│   └── api/
+│       ├── import/             <span class="code-comment"># CSV 导入接口（4 类数据源）</span>
+│       ├── compute/            <span class="code-comment"># 手动触发评分计算</span>
+│       └── ai-report/          <span class="code-comment"># AI 报告生成</span>
+├── components/
+│   ├── ui/                     <span class="code-comment"># shadcn/ui 基础组件</span>
+│   ├── charts/                 <span class="code-comment"># ECharts 封装</span>
+│   ├── dashboard/              <span class="code-comment"># 总览卡、省份地图等</span>
+│   ├── dealer/                 <span class="code-comment"># 经销商列表、详情、趋势图</span>
+│   └── import/                 <span class="code-comment"># CSV 上传、字段映射、预览</span>
+├── lib/
+│   ├── supabase/               <span class="code-comment"># 客户端 / 服务端 / 类型</span>
+│   ├── scoring/
+│   │   ├── health-score.ts     <span class="code-comment"># 总评分（= 流向健康度，含 calcFlowScore）</span>
+│   │   ├── purchase-stability.ts  <span class="code-comment"># 展示指标：采购稳定性（不参与评分）</span>
+│   │   ├── terminal-coverage.ts   <span class="code-comment"># 展示指标：终端覆盖度（不参与评分）</span>
+│   │   └── index.ts
+│   ├── risk/
+│   │   ├── inventory-risk.ts       <span class="code-comment"># 库存积压（连续 3 月 &lt;70%）</span>
+│   │   ├── abnormal-flow-risk.ts   <span class="code-comment"># 异常销售（&gt;130%）</span>
+│   │   ├── decline-risk.ts         <span class="code-comment"># 销售下降</span>
+│   │   └── index.ts
+│   ├── ai/                     <span class="code-comment"># DeepSeek API 封装 + Prompt 模板</span>
+│   └── utils.ts                <span class="code-comment"># cn() 等工具函数</span>
+├── types/
+│   └── index.ts                <span class="code-comment"># Dealer / HealthScore / RiskAlert 等</span>
+├── scripts/
+│   └── seed-mock.ts            <span class="code-comment"># Mock 数据生成</span>
+├── supabase/
+│   ├── migrations/             <span class="code-comment"># SQL 迁移脚本</span>
+│   └── schema.md               <span class="code-comment"># 数据库 schema 文档</span>
+└── .env.example                <span class="code-comment"># DeepSeek API key / Supabase 连接串</span></code></pre>
+
+      <div class="note">
+        <strong>目录设计说明：</strong>
+        <ul style="margin-top:8px;margin-bottom:0;">
+          <li><code>lib/scoring/</code> 拆为 3 文件 — <code>health-score.ts</code> 是总评分核心（V1.1 仅基于流向健康度），<code>purchase-stability</code> / <code>terminal-coverage</code> 是详情页展示指标，命名不带 <code>-score</code> 后缀以避免误解为参与评分。</li>
+          <li><code>components/</code> 按业务模块拆分（dashboard / dealer / import），比单一 <code>dealer/</code> 更清晰。</li>
+          <li>不建 <code>app/products/</code> — 产品（超声刀/吻合器）作为筛选维度，在 Dashboard 和经销商列表中通过 Tab 切换。</li>
+          <li>每个 <code>lib/</code> 子模块配 <code>index.ts</code> 统一导出，调用方无需关心内部文件结构。</li>
+        </ul>
+      </div>
+
+      <h3>9.4 API 设计（核心接口）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/dashboard?product=ultrasound</td><td>首页总览数据（经销商数量 / 健康 / 预警 / 异常 + 省份分布）</td></tr>
+            <tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/dealers?product=&amp;province=&amp;risk=</td><td>经销商列表，支持筛选</td></tr>
+            <tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/dealers/[id]</td><td>经销商详情（按产品维度的评分 + 趋势）</td></tr>
+            <tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/risks?product=&amp;level=</td><td>风险预警列表</td></tr>
+            <tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/import</td><td>CSV 数据导入（4 类数据源）</td></tr>
+            <tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/compute</td><td>手动触发评分计算（MVP）</td></tr>
+            <tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/ai-report</td><td>生成 AI 渠道分析报告</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>9.5 健康评分计算流程</h3>
+      <div class="card">
+        <p><strong>触发时机：</strong>数据导入后手动触发（MVP 阶段）。</p>
+        <pre><code><span class="code-comment">// 伪代码：评分计算引擎（V1.1 — 仅基于流向健康度）</span>
+<span class="code-key">function</span> calculateHealthScore(dealerId, productType, month) {
+  <span class="code-comment">// 1. 取当月采购量与出库量</span>
+  <span class="code-key">const</span> purchase  = getPurchaseSum(dealerId, productType, month)
+  <span class="code-key">const</span> shipment  = getShipmentSum(dealerId, productType, month)
+
+  <span class="code-comment">// 2. 计算出库比例与偏离度</span>
+  <span class="code-key">const</span> ratio = purchase &gt; 0 ? shipment / purchase : 0
+  <span class="code-key">const</span> dev   = Math.abs(ratio - 1)
+
+  <span class="code-comment">// 3. 健康评分 = 流向健康度评分（100 分制）</span>
+  <span class="code-key">const</span> total = calcFlowScore(dev)
+  <span class="code-key">const</span> status = total &gt;= 90 ? <span class="code-str">'healthy'</span>
+              : total &gt;= 60 ? <span class="code-str">'warn'</span>
+              : <span class="code-str">'risk'</span>
+
+  <span class="code-comment">// 4. 详情页展示指标（不参与评分，独立计算）</span>
+  <span class="code-key">const</span> stability = calcStability(...)     <span class="code-comment">// 采购稳定性：趋势/环比/断月</span>
+  <span class="code-key">const</span> coverage  = calcTerminalCoverage(...) <span class="code-comment">// 终端覆盖度：医院数/渗透率</span>
+
+  <span class="code-key">return</span> { total, ratio, status, stability, coverage }
+}
+
+<span class="code-comment">// 流向健康度评分函数</span>
+<span class="code-key">function</span> calcFlowScore(dev: number): number {
+  <span class="code-key">if</span> (dev &lt;= 0.2)      <span class="code-key">return</span> 100 - dev * 50                <span class="code-comment">// 80-120%  → 90-100</span>
+  <span class="code-key">else if</span> (dev &lt;= 0.3) <span class="code-key">return</span> 90 - (dev - 0.2) * 300         <span class="code-comment">// 70-80%/120-130% → 60-89</span>
+  <span class="code-key">else</span>               <span class="code-key">return</span> Math.max(0, 60 - (dev - 0.3) * 200) <span class="code-comment">// &lt;70%/&gt;130% → 0-59</span>
+}</code></pre>
+        <div class="note" style="margin-top:14px;">
+          <strong>边界说明：</strong>若 <code>purchase = 0</code>（当月无采购），ratio 设为 0，score = 0，状态为异常 — 表示经销商本月无进货但可能有出库，需人工核查。
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 10. 数据库设计 ===== -->
+    <section id="database">
+      <span class="section-num">10</span>
+      <h2>数据库设计</h2>
+
+      <h3>10.1 ER 关系图</h3>
+      <div class="arch-diagram">
+        <svg viewBox="0 0 820 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+          <!-- dealers -->
+          <rect x="20" y="20" width="180" height="100" rx="8" class="er-table"/>
+          <rect x="20" y="20" width="180" height="26" rx="8" class="er-table-head"/>
+          <text x="110" y="38" text-anchor="middle" class="er-table-head-text">dealers 经销商</text>
+          <text x="32" y="62" class="er-field er-pk">PK id</text>
+          <text x="32" y="78" class="er-field">dealer_name</text>
+          <text x="32" y="94" class="er-field">province</text>
+          <text x="32" y="110" class="er-field">created_at</text>
+
+          <!-- hospitals -->
+          <rect x="620" y="20" width="180" height="100" rx="8" class="er-table"/>
+          <rect x="620" y="20" width="180" height="26" rx="8" class="er-table-head"/>
+          <text x="710" y="38" text-anchor="middle" class="er-table-head-text">hospitals 医院</text>
+          <text x="632" y="62" class="er-field er-pk">PK id</text>
+          <text x="632" y="78" class="er-field">hospital_name</text>
+          <text x="632" y="94" class="er-field">province</text>
+          <text x="632" y="110" class="er-field">city</text>
+
+          <!-- products -->
+          <rect x="320" y="20" width="180" height="84" rx="8" class="er-table"/>
+          <rect x="320" y="20" width="180" height="26" rx="8" class="er-table-head"/>
+          <text x="410" y="38" text-anchor="middle" class="er-table-head-text">products 产品</text>
+          <text x="332" y="62" class="er-field er-pk">PK id</text>
+          <text x="332" y="78" class="er-field">code (ultrasound/stapler)</text>
+          <text x="332" y="94" class="er-field">name</text>
+
+          <!-- manufacturer_sales -->
+          <rect x="20" y="180" width="240" height="120" rx="8" class="er-table"/>
+          <rect x="20" y="180" width="240" height="26" rx="8" class="er-table-head"/>
+          <text x="140" y="198" text-anchor="middle" class="er-table-head-text">manufacturer_sales 厂家采购</text>
+          <text x="32" y="222" class="er-field er-pk">PK id</text>
+          <text x="32" y="238" class="er-field er-fk">FK dealer_id → dealers</text>
+          <text x="32" y="254" class="er-field er-fk">FK product_id → products</text>
+          <text x="32" y="270" class="er-field">month (2026-01)</text>
+          <text x="32" y="286" class="er-field">purchase_quantity</text>
+
+          <!-- dealer_shipments -->
+          <rect x="290" y="180" width="240" height="140" rx="8" class="er-table"/>
+          <rect x="290" y="180" width="240" height="26" rx="8" class="er-table-head"/>
+          <text x="410" y="198" text-anchor="middle" class="er-table-head-text">dealer_shipments 经销商出库</text>
+          <text x="302" y="222" class="er-field er-pk">PK id</text>
+          <text x="302" y="238" class="er-field er-fk">FK dealer_id → dealers</text>
+          <text x="302" y="254" class="er-field er-fk">FK hospital_id → hospitals</text>
+          <text x="302" y="270" class="er-field er-fk">FK product_id → products</text>
+          <text x="302" y="286" class="er-field">month</text>
+          <text x="302" y="302" class="er-field">shipment_quantity</text>
+          <text x="302" y="318" class="er-field">source_type</text>
+
+          <!-- hospital_intakes -->
+          <rect x="560" y="180" width="240" height="120" rx="8" class="er-table"/>
+          <rect x="560" y="180" width="240" height="26" rx="8" class="er-table-head"/>
+          <text x="680" y="198" text-anchor="middle" class="er-table-head-text">hospital_intakes 医院入院</text>
+          <text x="572" y="222" class="er-field er-pk">PK id</text>
+          <text x="572" y="238" class="er-field er-fk">FK hospital_id → hospitals</text>
+          <text x="572" y="254" class="er-field er-fk">FK dealer_id → dealers</text>
+          <text x="572" y="270" class="er-field er-fk">FK product_id → products</text>
+          <text x="572" y="286" class="er-field">month / quantity / province</text>
+
+          <!-- procurement_data -->
+          <rect x="200" y="360" width="420" height="120" rx="8" class="er-table"/>
+          <rect x="200" y="360" width="420" height="26" rx="8" class="er-table-head"/>
+          <text x="410" y="378" text-anchor="middle" class="er-table-head-text">procurement_data 省级集采（配送商 ≠ 经销商）</text>
+          <text x="212" y="402" class="er-field er-pk">PK id</text>
+          <text x="212" y="418" class="er-field er-fk">FK hospital_id → hospitals</text>
+          <text x="212" y="434" class="er-field er-fk">FK product_id → products</text>
+          <text x="212" y="450" class="er-field">delivery_company / province</text>
+          <text x="212" y="466" class="er-field">month / quantity</text>
+
+          <!-- health_scores -->
+          <rect x="20" y="510" width="240" height="120" rx="8" class="er-table"/>
+          <rect x="20" y="510" width="240" height="26" rx="8" class="er-table-head"/>
+          <text x="140" y="528" text-anchor="middle" class="er-table-head-text">health_scores 健康评分</text>
+          <text x="32" y="552" class="er-field er-pk">PK id</text>
+          <text x="32" y="568" class="er-field er-fk">FK dealer_id / product_id</text>
+          <text x="32" y="584" class="er-field">month</text>
+          <text x="32" y="600" class="er-field">total (仅流向) / shipment_ratio</text>
+          <text x="32" y="616" class="er-field">stability / coverage (展示用)</text>
+
+          <!-- risk_alerts -->
+          <rect x="290" y="510" width="240" height="120" rx="8" class="er-table"/>
+          <rect x="290" y="510" width="240" height="26" rx="8" class="er-table-head"/>
+          <text x="410" y="528" text-anchor="middle" class="er-table-head-text">risk_alerts 风险预警</text>
+          <text x="302" y="552" class="er-field er-pk">PK id</text>
+          <text x="302" y="568" class="er-field er-fk">FK dealer_id / product_id</text>
+          <text x="302" y="584" class="er-field">risk_type (inventory/abnormal/decline)</text>
+          <text x="302" y="600" class="er-field">severity / triggered_at</text>
+          <text x="302" y="616" class="er-field">context (JSONB)</text>
+
+          <!-- ai_reports -->
+          <rect x="560" y="510" width="240" height="120" rx="8" class="er-table"/>
+          <rect x="560" y="510" width="240" height="26" rx="8" class="er-table-head"/>
+          <text x="680" y="528" text-anchor="middle" class="er-table-head-text">ai_reports AI 报告</text>
+          <text x="572" y="552" class="er-field er-pk">PK id</text>
+          <text x="572" y="568" class="er-field">scope (region/dealer/product)</text>
+          <text x="572" y="584" class="er-field">period (week/month)</text>
+          <text x="572" y="600" class="er-field">content (markdown)</text>
+          <text x="572" y="616" class="er-field">created_at</text>
+
+          <!-- 关系线 -->
+          <line x1="110" y1="120" x2="110" y2="180" class="er-line"/>
+          <line x1="140" y1="120" x2="290" y2="180" class="er-line"/>
+          <line x1="410" y1="104" x2="410" y2="180" class="er-line"/>
+          <line x1="410" y1="104" x2="200" y2="180" class="er-line"/>
+          <line x1="410" y1="104" x2="620" y2="180" class="er-line"/>
+          <line x1="710" y1="120" x2="710" y2="180" class="er-line"/>
+          <line x1="680" y1="120" x2="530" y2="180" class="er-line"/>
+          <line x1="680" y1="120" x2="710" y2="180" class="er-line"/>
+          <line x1="410" y1="320" x2="410" y2="360" class="er-line"/>
+          <line x1="140" y1="300" x2="140" y2="510" class="er-line"/>
+          <line x1="410" y1="320" x2="410" y2="510" class="er-line"/>
+          <line x1="680" y1="300" x2="680" y2="510" class="er-line"/>
+        </svg>
+      </div>
+
+      <h3>10.2 表结构详细定义</h3>
+
+      <h4>基础维度表</h4>
+      <pre><code><span class="code-comment">-- 经销商</span>
+<span class="code-key">CREATE TABLE</span> dealers (
+  id           <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  dealer_name  <span class="code-key">TEXT NOT NULL</span>,
+  province     <span class="code-key">TEXT</span>,
+  city         <span class="code-key">TEXT</span>,
+  created_at   <span class="code-key">TIMESTAMPTZ DEFAULT</span> now(),
+  <span class="code-key">UNIQUE</span>(dealer_name, province)
+);
+
+<span class="code-comment">-- 医院</span>
+<span class="code-key">CREATE TABLE</span> hospitals (
+  id            <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  hospital_name <span class="code-key">TEXT NOT NULL</span>,
+  province      <span class="code-key">TEXT NOT NULL</span>,
+  city          <span class="code-key">TEXT</span>,
+  hospital_level <span class="code-key">TEXT</span>,  <span class="code-comment">-- 三甲 / 三乙 / 二甲 ...</span>
+  created_at    <span class="code-key">TIMESTAMPTZ DEFAULT</span> now(),
+  <span class="code-key">UNIQUE</span>(hospital_name, province)
+);
+
+<span class="code-comment">-- 产品</span>
+<span class="code-key">CREATE TABLE</span> products (
+  id    <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  code  <span class="code-key">TEXT UNIQUE NOT NULL</span>,  <span class="code-comment">-- ultrasound | stapler</span>
+  name  <span class="code-key">TEXT NOT NULL</span>
+);</code></pre>
+
+      <h4>原始数据表（4 类来源）</h4>
+      <pre><code><span class="code-comment">-- 1. 厂家采购数据</span>
+<span class="code-key">CREATE TABLE</span> manufacturer_sales (
+  id                 <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  dealer_id          <span class="code-key">UUID REFERENCES</span> dealers(id),
+  product_id         <span class="code-key">UUID REFERENCES</span> products(id),
+  month              <span class="code-key">TEXT NOT NULL</span>,  <span class="code-comment">-- 'YYYY-MM'</span>
+  purchase_quantity  <span class="code-key">NUMERIC NOT NULL</span>,
+  created_at         <span class="code-key">TIMESTAMPTZ DEFAULT</span> now(),
+  <span class="code-key">UNIQUE</span>(dealer_id, product_id, month)
+);
+
+<span class="code-comment">-- 2. 经销商出库数据（核心）</span>
+<span class="code-key">CREATE TABLE</span> dealer_shipments (
+  id                 <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  dealer_id          <span class="code-key">UUID REFERENCES</span> dealers(id),
+  hospital_id        <span class="code-key">UUID REFERENCES</span> hospitals(id),
+  product_id         <span class="code-key">UUID REFERENCES</span> products(id),
+  month              <span class="code-key">TEXT NOT NULL</span>,
+  shipment_quantity  <span class="code-key">NUMERIC NOT NULL</span>,
+  source_type        <span class="code-key">TEXT NOT NULL</span> <span class="code-key">CHECK</span> (source_type <span class="code-key">IN</span> (<span class="code-str">'invoice'</span>,<span class="code-str">'delivery_note'</span>,<span class="code-str">'inventory_report'</span>)),
+  created_at         <span class="code-key">TIMESTAMPTZ DEFAULT</span> now()
+);
+
+<span class="code-comment">-- 3. 医院终端入院数据</span>
+<span class="code-key">CREATE TABLE</span> hospital_intakes (
+  id          <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  hospital_id <span class="code-key">UUID REFERENCES</span> hospitals(id),
+  dealer_id   <span class="code-key">UUID REFERENCES</span> dealers(id),
+  product_id  <span class="code-key">UUID REFERENCES</span> products(id),
+  month       <span class="code-key">TEXT NOT NULL</span>,
+  quantity    <span class="code-key">NUMERIC NOT NULL</span>,
+  province    <span class="code-key">TEXT</span>,
+  created_at  <span class="code-key">TIMESTAMPTZ DEFAULT</span> now()
+);
+
+<span class="code-comment">-- 4. 省级集采数据（配送商 ≠ 经销商）</span>
+<span class="code-key">CREATE TABLE</span> procurement_data (
+  id               <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  hospital_id      <span class="code-key">UUID REFERENCES</span> hospitals(id),
+  product_id       <span class="code-key">UUID REFERENCES</span> products(id),
+  delivery_company <span class="code-key">TEXT NOT NULL</span>,
+  province         <span class="code-key">TEXT NOT NULL</span>,
+  month            <span class="code-key">TEXT NOT NULL</span>,
+  quantity         <span class="code-key">NUMERIC NOT NULL</span>,
+  created_at       <span class="code-key">TIMESTAMPTZ DEFAULT</span> now()
+);</code></pre>
+
+      <h4>计算结果表（评分 + 风险 + AI 报告）</h4>
+      <pre><code><span class="code-comment">-- 健康评分（按 经销商 × 产品 × 月 粒度）</span>
+<span class="code-comment">-- V1.1: total 仅基于流向健康度，stability/coverage 为详情页展示指标</span>
+<span class="code-key">CREATE TABLE</span> health_scores (
+  id           <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  dealer_id    <span class="code-key">UUID REFERENCES</span> dealers(id),
+  product_id   <span class="code-key">UUID REFERENCES</span> products(id),
+  month        <span class="code-key">TEXT NOT NULL</span>,
+  total        <span class="code-key">NUMERIC</span>,        <span class="code-comment">-- 0-100，仅基于流向健康度</span>
+  shipment_ratio <span class="code-key">NUMERIC</span>,      <span class="code-comment">-- 出库比例 = shipment / purchase</span>
+  stability    <span class="code-key">NUMERIC</span>,        <span class="code-comment">-- 展示用：采购稳定性指标（不参与 total）</span>
+  coverage     <span class="code-key">NUMERIC</span>,        <span class="code-comment">-- 展示用：终端覆盖度指标（不参与 total）</span>
+  status       <span class="code-key">TEXT CHECK</span> (status <span class="code-key">IN</span> (<span class="code-str">'healthy'</span>,<span class="code-str">'warn'</span>,<span class="code-str">'risk'</span>)),
+  calculated_at <span class="code-key">TIMESTAMPTZ DEFAULT</span> now(),
+  <span class="code-key">UNIQUE</span>(dealer_id, product_id, month)
+);
+
+<span class="code-comment">-- 风险预警</span>
+<span class="code-key">CREATE TABLE</span> risk_alerts (
+  id          <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  dealer_id   <span class="code-key">UUID REFERENCES</span> dealers(id),
+  product_id  <span class="code-key">UUID REFERENCES</span> products(id),
+  risk_type   <span class="code-key">TEXT CHECK</span> (risk_type <span class="code-key">IN</span> (<span class="code-str">'inventory'</span>,<span class="code-str">'abnormal'</span>,<span class="code-str">'decline'</span>)),
+  severity    <span class="code-key">TEXT CHECK</span> (severity <span class="code-key">IN</span> (<span class="code-str">'low'</span>,<span class="code-str">'medium'</span>,<span class="code-str">'high'</span>)),
+  context     <span class="code-key">JSONB</span>,            <span class="code-comment">-- 触发时的数据快照</span>
+  triggered_at <span class="code-key">TIMESTAMPTZ DEFAULT</span> now(),
+  resolved_at <span class="code-key">TIMESTAMPTZ</span>
+);
+
+<span class="code-comment">-- AI 报告</span>
+<span class="code-key">CREATE TABLE</span> ai_reports (
+  id         <span class="code-key">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  scope      <span class="code-key">TEXT</span>,  <span class="code-comment">-- region | dealer | product</span>
+  scope_value <span class="code-key">TEXT</span>,  <span class="code-comment">-- '江苏' / dealer_id / 'ultrasound'</span>
+  period     <span class="code-key">TEXT</span>,  <span class="code-comment">-- week | month</span>
+  period_value <span class="code-key">TEXT</span>, <span class="code-comment">-- '2026-W30' / '2026-07'</span>
+  content    <span class="code-key">TEXT</span>,  <span class="code-comment">-- Markdown 报告内容</span>
+  model      <span class="code-key">TEXT</span>,  <span class="code-comment">-- 'deepseek-chat'</span>
+  token_usage <span class="code-key">JSONB</span>,
+  created_at <span class="code-key">TIMESTAMPTZ DEFAULT</span> now()
+);</code></pre>
+
+      <h3>10.3 索引策略</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>表</th><th>索引</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td>manufacturer_sales</td><td class="mono">(dealer_id, product_id, month)</td><td>评分计算主查询</td></tr>
+            <tr><td>dealer_shipments</td><td class="mono">(dealer_id, product_id, month)</td><td>出库聚合</td></tr>
+            <tr><td>dealer_shipments</td><td class="mono">(hospital_id, month)</td><td>终端覆盖分析</td></tr>
+            <tr><td>health_scores</td><td class="mono">(month, status)</td><td>Dashboard 状态计数</td></tr>
+            <tr><td>health_scores</td><td class="mono">(dealer_id, product_id)</td><td>详情页趋势查询</td></tr>
+            <tr><td>risk_alerts</td><td class="mono">(triggered_at DESC)</td><td>预警列表排序</td></tr>
+            <tr><td>risk_alerts</td><td class="mono">(dealer_id, risk_type)</td><td>经销商风险聚合</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== 11. 开发计划 ===== -->
+    <section id="plan">
+      <span class="section-num">11</span>
+      <h2>开发计划</h2>
+      <p>按 6 个阶段推进，每阶段交付可独立验证的成果。总周期约 <strong>6 周</strong>（按兼职节奏，全职可压缩到 3-4 周）。</p>
+
+      <div class="timeline">
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-title">阶段 1 · 项目初始化 & 数据层</span>
+            <span class="phase-duration">Week 1</span>
+          </div>
+          <div class="phase-deliverable">
+            <div class="label">交付物</div>
+            <ul>
+              <li>Next.js 项目初始化（TypeScript + Tailwind + shadcn/ui）</li>
+              <li>Supabase 项目创建 + 数据库迁移脚本（10 张表）</li>
+              <li>Mock 数据生成脚本（10 个经销商 × 2 产品 × 6 个月）</li>
+              <li>导入 4 类原始数据 CSV</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-title">阶段 2 · 评分计算引擎</span>
+            <span class="phase-duration">Week 2</span>
+          </div>
+          <div class="phase-deliverable">
+            <div class="label">交付物</div>
+            <ul>
+              <li>lib/scoring 流向健康度评分算法（出库比例 → 100 分制映射）</li>
+              <li>lib/scoring 展示指标计算（采购稳定性 / 终端覆盖度，不参与评分）</li>
+              <li>lib/risk 风险规则识别（库存积压 / 异常销售 / 销售下降）</li>
+              <li>计算 API + 写入 health_scores / risk_alerts</li>
+              <li>单元测试覆盖核心算法</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-title">阶段 3 · Dashboard + 经销商列表/详情</span>
+            <span class="phase-duration">Week 3-4 上半</span>
+          </div>
+          <div class="phase-deliverable">
+            <div class="label">交付物</div>
+            <ul>
+              <li>首页 Dashboard（4 张总览卡 + 省份健康地图 + 产品筛选）</li>
+              <li>经销商列表（筛选 / 排序 / 分页）</li>
+              <li>经销商详情页（评分卡 + 产品维度切换 + ECharts 趋势图）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-title">阶段 4 · 风险预警中心</span>
+            <span class="phase-duration">Week 4 下半</span>
+          </div>
+          <div class="phase-deliverable">
+            <div class="label">交付物</div>
+            <ul>
+              <li>风险预警列表页（按类型 / 严重程度 / 经销商筛选）</li>
+              <li>风险详情卡（触发条件 + 数据快照 + 建议动作）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-title">阶段 5 · AI 报告生成</span>
+            <span class="phase-duration">Week 5</span>
+          </div>
+          <div class="phase-deliverable">
+            <div class="label">交付物</div>
+            <ul>
+              <li>DeepSeek API 接入 + Prompt 模板设计</li>
+              <li>报告生成 API（区域 / 经销商 / 产品 三种 scope）</li>
+              <li>报告查看页（Markdown 渲染 + 历史报告列表）</li>
+              <li>Token 用量记录与成本控制</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-title">阶段 6 · UI 打磨 & 部署上线</span>
+            <span class="phase-duration">Week 6</span>
+          </div>
+          <div class="phase-deliverable">
+            <div class="label">交付物</div>
+            <ul>
+              <li>UI 一致性走查（浅色莫兰迪绿 / SaaS 风格）</li>
+              <li>响应式适配 + 加载态 + 空状态</li>
+              <li>Vercel 部署 + datarecord.me 域名绑定</li>
+              <li>面试演示脚本 + 截图素材</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h3>里程碑节点</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>里程碑</th><th>时间</th><th>验收标准</th></tr></thead>
+          <tbody>
+            <tr><td>M1 数据可用</td><td>Week 1 末</td><td>数据库 10 张表建好，Mock 数据可查询</td></tr>
+            <tr><td>M2 评分可用</td><td>Week 2 末</td><td>health_scores 表有数据，流向健康度评分逻辑正确</td></tr>
+            <tr><td>M3 页面可用</td><td>Week 4 末</td><td>Dashboard + 列表 + 详情 + 风险页 全部可点击浏览</td></tr>
+            <tr><td>M4 AI 可用</td><td>Week 5 末</td><td>能生成至少 1 份完整 AI 渠道分析报告</td></tr>
+            <tr><td>M5 上线</td><td>Week 6 末</td><td>datarecord.me 可公网访问，演示流程闭环</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== 12. 待确认决策点 ===== -->
+    <section id="decisions">
+      <span class="section-num">12</span>
+      <h2>已确认决策记录</h2>
+      <p>以下 7 项决策已由 Ivy 确认（2026-07-29），可据此启动阶段 1 开发。</p>
+
+      <div class="decision-list">
+        <h3>已确认的 7 项决策</h3>
+
+        <div class="decision-item">
+          <div class="decision-q">评分模型简化为仅基于流向健康度</div>
+          <div class="decision-opts">
+            <span class="decision-confirmed">已确认 · 调整</span>
+          </div>
+          <div class="decision-reason">
+            健康评分 = 流向健康度评分（100 分制）。采购稳定性、终端覆盖度降级为经销商详情页的展示指标，不参与总评分计算。评分聚焦于"货是否真正流向终端"这一核心问题。
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-q">健康状态采用三档划分</div>
+          <div class="decision-opts">
+            <span class="decision-confirmed">已确认 · 选项 A</span>
+          </div>
+          <div class="decision-reason">
+            三档：健康（≥90）/ 预警（60-89）/ 异常（&lt;60）。与 PRD 原始设计一致，简洁清晰。
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-q">AI 模型使用 DeepSeek</div>
+          <div class="decision-opts">
+            <span class="decision-confirmed">已确认 · 选项 A</span>
+          </div>
+          <div class="decision-reason">
+            DeepSeek API，成本约为 OpenAI 的 1/10，适合 MVP 阶段。AI 仅负责报告总结/解释/建议，不参与数值计算。
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-q">MVP 不需要登录认证</div>
+          <div class="decision-opts">
+            <span class="decision-confirmed">已确认 · 选项 A</span>
+          </div>
+          <div class="decision-reason">
+            面试演示场景下免登录更顺，所有 API 直接公开访问。后续如需多租户再补 Supabase Auth。
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-q">评分计算时机：数据导入后手动触发</div>
+          <div class="decision-opts">
+            <span class="decision-confirmed">已确认 · 选项 A</span>
+          </div>
+          <div class="decision-reason">
+            MVP 阶段通过 <code>/api/compute</code> 手动触发评分计算，结果落表。后续可升级为 Supabase Cron 月度自动任务。
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-q">Mock 数据规模：10 经销商 × 2 产品 × 6 个月</div>
+          <div class="decision-opts">
+            <span class="decision-confirmed">已确认 · 选项 A</span>
+          </div>
+          <div class="decision-reason">
+            约 120 条评分记录（10×2×6），数据量适中，足以展示趋势、风险、区域分布。Mock 数据需包含健康/预警/异常三种状态的样本。
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-q">UI 风格沿用 WorkBuddy 浅色莫兰迪绿</div>
+          <div class="decision-opts">
+            <span class="decision-confirmed">已确认 · 选项 A</span>
+          </div>
+          <div class="decision-reason">
+            复用 WorkBuddy 的浅色莫兰迪绿 SaaS 风格（主色 #5BA88A），保持视觉一致性，减少设计决策成本。
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="background:var(--primary-soft);border-left-color:var(--primary);">
+        <strong>下一步：</strong>所有决策已锁定，PRD V1.1 定稿。可立即启动<strong>阶段 1 · 项目初始化 & 数据层</strong>开发 — Next.js 项目初始化 + Supabase 10 张表迁移脚本 + Mock 数据生成。
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="footer">
+  DataRecord ChannelRx · 产品设计书 V1.1 · 2026-07-29 · 由 Ivy Wu 与 WorkBuddy 协作整理
+</footer>
+
+</body>
+</html>
