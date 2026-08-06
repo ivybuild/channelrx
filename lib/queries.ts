@@ -151,6 +151,7 @@ export interface DealerListFilters {
   product: ProductFilter;
   province: string;
   risk: RiskFilter;
+  q?: string;
 }
 
 export async function getDealersList(
@@ -159,6 +160,10 @@ export async function getDealersList(
   month?: string
 ): Promise<ScoreRow[]> {
   let rows = await fetchLatestScores(f.product, year, month);
+  if (f.q) {
+    const q = f.q.toLowerCase();
+    rows = rows.filter((r) => r.dealer_name.toLowerCase().includes(q));
+  }
   if (f.province && f.province !== 'all') {
     rows = rows.filter((r) => r.province === f.province);
   }
@@ -462,4 +467,28 @@ export async function getReportById(id: string) {
     .maybeSingle();
   if (error) throw new Error(`查询报告失败: ${error.message}`);
   return data;
+}
+
+// ---------- 经销商-医院对应关系 ----------
+
+export interface MappingRow {
+  hospital_name: string;
+  province: string | null;
+  effective_from: string;
+  effective_to: string | null;
+}
+
+export async function getDealerHospitalMapping(dealerId: string): Promise<MappingRow[]> {
+  const { data, error } = await getSupabaseServer()
+    .from('dealer_hospital_mapping')
+    .select('effective_from, effective_to, hospital:hospitals(hospital_name, province)')
+    .eq('dealer_id', dealerId)
+    .order('effective_from', { ascending: false });
+  if (error) throw new Error('查询对应关系失败: ' + String(error.message));
+  return (data ?? []).map((r: any) => ({
+    hospital_name: r.hospital?.hospital_name ?? '未知',
+    province: r.hospital?.province ?? null,
+    effective_from: r.effective_from,
+    effective_to: r.effective_to,
+  }));
 }

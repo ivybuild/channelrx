@@ -9,8 +9,8 @@ export default function ImportPage() {
       <div>
         <h1 className="text-xl font-semibold">数据导入</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          上传 4 类原始数据（CSV），导入后自动重新计算评分与风险。
-          维度（经销商 / 医院 / 产品）按名称自动匹配，不存在则自动创建。
+          上传 4 类流水 + 3 类维度数据（CSV），导入后自动重新计算评分与风险。
+          维度（经销商/医院/产品）按名称 upsert 匹配；流水表支持覆盖/追加模式。
         </p>
       </div>
 

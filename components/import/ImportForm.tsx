@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import Papa from 'papaparse';
 import { cn } from '@/lib/utils';
 
-type SourceKey = 'manufacturer_sales' | 'dealer_shipments' | 'hospital_intakes' | 'procurement_data';
+type SourceKey = 'manufacturer_sales' | 'dealer_shipments' | 'hospital_intakes' | 'procurement_data' | 'dealers' | 'hospitals' | 'dealer_hospital_mapping';
 
 const SOURCES: {
   key: SourceKey;
@@ -12,6 +12,7 @@ const SOURCES: {
   desc: string;
   headers: string;
   example: string;
+  section: 'flow' | 'dim';
 }[] = [
   {
     key: 'manufacturer_sales',
@@ -19,27 +20,55 @@ const SOURCES: {
     desc: '厂家 → 经销商 的采购记录',
     headers: '经销商名称,产品code,日期,采购数量,省份',
     example: '宁创医疗科技有限公司,ultrasound,2026-06-15,150,江苏',
+    section: 'flow',
   },
   {
     key: 'dealer_shipments',
     label: '经销商出库（核心）',
     desc: '经销商 → 医院 的出库记录',
     headers: '经销商名称,医院名称,产品code,日期,出库数量,数据来源,省份',
-    example: '宁创医疗科技有限公司,江宁医科大学附属第一医院,ultrasound,2026-06-15,50,invoice,江苏',
+    example: '宁创医疗科技有限公司,江宁医科大学附属第一医院,ultrasound,2026-03,50,invoice,江苏',
+    section: 'flow',
   },
   {
     key: 'hospital_intakes',
     label: '医院入院',
     desc: '医院终端实际入院数据',
     headers: '医院名称,经销商名称,产品code,日期,数量,省份',
-    example: '江宁医科大学附属第一医院,宁创医疗科技有限公司,ultrasound,2026-06-15,48,江苏',
+    example: '江宁医科大学附属第一医院,宁创医疗科技有限公司,ultrasound,2026-03,48,江苏',
+    section: 'flow',
   },
   {
     key: 'procurement_data',
     label: '省级集采',
     desc: '集采配送记录（配送商 ≠ 经销商）',
     headers: '医院名称,配送公司,产品code,日期,数量,省份',
-    example: '江宁医科大学附属第一医院,健邦医药,ultrasound,2026-06-15,60,江苏',
+    example: '江宁医科大学附属第一医院,健邦医药,ultrasound,2026,60,江苏',
+    section: 'flow',
+  },
+  {
+    key: 'dealers',
+    label: '经销商',
+    desc: '导入/更新经销商主数据',
+    headers: '经销商名称,省份,城市',
+    example: '宁创医疗科技有限公司,江苏,南京',
+    section: 'dim',
+  },
+  {
+    key: 'hospitals',
+    label: '医院',
+    desc: '导入/更新医院主数据',
+    headers: '医院名称,省份,城市',
+    example: '江宁医科大学附属第一医院,江苏,南京',
+    section: 'dim',
+  },
+  {
+    key: 'dealer_hospital_mapping',
+    label: '对应关系',
+    desc: '经销商-终端医院对应表（带有效期，支持医院更换经销商）',
+    headers: '经销商名称,医院名称,生效日期,失效日期',
+    example: '宁创医疗科技有限公司,江宁医科大学附属第一医院,2025-01-01,',
+    section: 'dim',
   },
 ];
 
@@ -54,6 +83,9 @@ const HEADER_ALIAS: Record<string, string> = {
   省份: '省份', province: '省份',
   数据来源: '数据来源', source_type: '数据来源',
   配送公司: '配送公司', delivery_company: '配送公司',
+  城市: '城市', city: '城市',
+  生效日期: '生效日期', effective_from: '生效日期',
+  失效日期: '失效日期', effective_to: '失效日期',
 };
 
 export function ImportForm() {
@@ -131,28 +163,27 @@ export function ImportForm() {
   return (
     <div className="space-y-4">
       {/* 数据源选择 */}
-      <div className="flex flex-wrap gap-2">
-        {SOURCES.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => {
-              setSource(s.key);
-              setRows([]);
-              setResult(null);
-              setText('');
-              setError('');
-            }}
-            className={cn(
-              'rounded-lg border px-3 py-1.5 text-sm transition-colors',
-              source === s.key
-                ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)] font-medium text-[hsl(var(--primary))]'
-                : 'border-border bg-card text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
+      <div className="space-y-1">
+        <div className="text-xs font-medium text-muted-foreground">流水导入（导入后自动重算评分与风险）</div>
+        <div className="flex flex-wrap gap-2">
+          {SOURCES.filter((s) => s.section === 'flow').map((s) => (
+            <button key={s.key} type="button" onClick={() => { setSource(s.key); setRows([]); setResult(null); setText(''); setError(''); }}
+              className={cn('rounded-lg border px-3 py-1.5 text-sm transition-colors',
+                source === s.key ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)] font-medium text-[hsl(var(--primary))]' : 'border-border bg-card text-muted-foreground hover:text-foreground')}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 text-xs font-medium text-muted-foreground">维度管理（先维护基础数据与对应关系，不触发重算）</div>
+        <div className="flex flex-wrap gap-2">
+          {SOURCES.filter((s) => s.section === 'dim').map((s) => (
+            <button key={s.key} type="button" onClick={() => { setSource(s.key); setRows([]); setResult(null); setText(''); setError(''); }}
+              className={cn('rounded-lg border px-3 py-1.5 text-sm transition-colors',
+                source === s.key ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)] font-medium text-[hsl(var(--primary))]' : 'border-border bg-card text-muted-foreground hover:text-foreground')}>
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground">{current.desc}</p>
@@ -219,18 +250,20 @@ export function ImportForm() {
         </div>
       )}
 
-      {/* 导入按钮 + 覆盖开关 */}
+      {/* 导入按钮 + 覆盖开关（仅流水表，维度表由 upsert 自动覆盖） */}
       {preview.length > 0 && (
         <div className="flex flex-wrap items-center gap-4">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={replace}
-              onChange={(e) => setReplace(e.target.checked)}
-              className="h-4 w-4 accent-[hsl(var(--primary))]"
-            />
-            覆盖导入（先删除本批日期区间的旧数据，再写入）
-          </label>
+          {current.section === 'flow' && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={replace}
+                onChange={(e) => setReplace(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              覆盖导入（先删除本批日期区间的旧数据，再写入）
+            </label>
+          )}
           <button
             type="button"
             onClick={onImport}
@@ -246,9 +279,10 @@ export function ImportForm() {
       {result && (
         <div className="rounded-lg border border-[hsl(var(--healthy)/0.4)] bg-[hsl(var(--healthy)/0.06)] p-4 text-sm">
           ✅ 导入成功：{result.imported} 条记录
-          {result.replaced && <span>（覆盖模式：已先删除本批日期区间旧数据）</span>}；
-          已自动重算评分 <strong>{result.compute?.healthScores}</strong> 条、风险 <strong>{result.compute?.riskAlerts}</strong> 条。
-          页面数据已刷新，可在总览/经销商/风险页查看。
+          {result.replaced && <span>（覆盖模式：已先删除本批日期区间旧数据）</span>}
+          {result.compute
+            ? <span>；已自动重算评分 <strong>{result.compute.healthScores}</strong> 条、风险 <strong>{result.compute.riskAlerts}</strong> 条。页面数据已刷新。</span>
+            : <span>（维度数据，无需重算）</span>}
         </div>
       )}
     </div>

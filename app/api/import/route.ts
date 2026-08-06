@@ -5,7 +5,7 @@ import { runCompute } from '@/lib/compute';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Vercel Hobby 默认 10s 超时，导入+重算需要更长
 
-type SourceType = 'manufacturer_sales' | 'dealer_shipments' | 'hospital_intakes' | 'procurement_data';
+type SourceType = 'manufacturer_sales' | 'dealer_shipments' | 'hospital_intakes' | 'procurement_data' | 'dealers' | 'hospitals' | 'dealer_hospital_mapping';
 
 // 表头别名 → 规范字段
 const ALIAS: Record<string, string> = {
@@ -17,8 +17,8 @@ const ALIAS: Record<string, string> = {
   出库数量: 'shipment_quantity', shipment_quantity: 'shipment_quantity',
   数量: 'quantity', quantity: 'quantity',
   省份: 'province', province: 'province',
-  数据来源: 'source_type', source_type: 'source_type',
-  配送公司: 'delivery_company', delivery_company: 'delivery_company',
+  城市: 'city', city: 'city', 生效日期: 'effective_from', effective_from: 'effective_from', 失效日期: 'effective_to', effective_to: 'effective_to',
+  配送公司: 'delivery_company', delivery_company: 'delivery_company', 数据来源: 'source_type', source_type: 'source_type',
 };
 
 function normalizeRow(raw: Record<string, unknown>): Record<string, string> {
@@ -27,8 +27,11 @@ function normalizeRow(raw: Record<string, unknown>): Record<string, string> {
     const field = ALIAS[k.trim()];
     if (field) out[field] = String(v ?? '').trim();
   }
-  // 日期归一化：YYYY-MM → YYYY-MM-01
-  if (out.date && /^\d{4}-\d{2}$/.test(out.date)) out.date = `${out.date}-01`;
+  // 日期归一化：YYYY → YYYY-01-01, YYYY-MM → YYYY-MM-01
+  if (out.date) {
+    if (/^\d{4}$/.test(out.date)) out.date = `${out.date}-01-01`;
+    else if (/^\d{4}-\d{2}$/.test(out.date)) out.date = `${out.date}-01`;
+  }
   return out;
 }
 
@@ -178,10 +181,39 @@ async function processRows(source: SourceType, rows: Record<string, string>[], r
         date: r.date,
         quantity: Number(r.quantity),
       });
+    } else if (source === 'dealers') {
+      if (!r.dealer_name) continue;
+      const key = `${r.dealer_name}|${r.province ?? ''}`;
+      if (missing.dealers.has(key)) continue; // 已标记缺失，等 insertMissing
+      const id = resolveId(store.dealerByName, r.dealer_name, r.province);
+      if (id) valid.push({ id, dealer_name: r.dealer_name, province: r.province || null, city: r.city || null });
+      else missing.dealers.add(key);
+    } else if (source === 'hospitals') {
+      if (!r.hospital_name) continue;
+      const key = `${r.hospital_name}|${r.province ?? ''}`;
+      if (missing.hospitals.has(key)) continue;
+      const id = resolveId(store.hospitalByName, r.hospital_name, r.province);
+      if (id) valid.push({ id, hospital_name: r.hospital_name, province: r.province || '未知', city: r.city || null });
+      else missing.hospitals.add(key);
+    } else if (source === 'dealer_hospital_mapping') {
+      if (!r.dealer_name || !r.hospital_name || !r.effective_from) continue;
+      valid.push({ _dealer_name: r.dealer_name, _dealer_province: r.province, _hospital_name: r.hospital_name, effective_from: r.effective_from, effective_to: r.effective_to || null });
     }
   }
 
+  // 经销商-医院对应：需要二次解析维度（因为 dealer/hospital 可能在同批新增）
   let clean = valid.filter((v) => Object.values(v).every((x) => x !== null && x !== undefined));
+  if (source === 'dealer_hospital_mapping') {
+    clean = [];
+    for (const v of valid) {
+      if (!v._dealer_name || !v._hospital_name) continue;
+      const did = resolveId(store.dealerByName, v._dealer_name, v._dealer_province);
+      const hid = resolveId(store.hospitalByName, v._hospital_name);
+      if (did && hid) clean.push({ dealer_id: did, hospital_id: hid, effective_from: v.effective_from, effective_to: v.effective_to });
+    }
+  } else if (source === 'dealers' || source === 'hospitals') {
+    // 维度已有 id，直接 upsert
+  }
   if (clean.length === 0) return { imported: 0 };
 
   // 厂家采购有唯一键（经销商×产品×日期）：同一批内重复键先合并（数量相加），
@@ -210,7 +242,10 @@ async function processRows(source: SourceType, rows: Record<string, string>[], r
     if (delErr) throw new Error(`删除旧数据失败: ${delErr.message}`);
   }
 
-  const conflict = source === 'manufacturer_sales' ? { onConflict: 'dealer_id,product_id,date' } : undefined;
+  const conflict = source === 'manufacturer_sales' ? { onConflict: 'dealer_id,product_id,date' }
+    : source === 'dealers' ? { onConflict: 'dealer_name,province' }
+    : source === 'hospitals' ? { onConflict: 'hospital_name,province' }
+    : undefined;
   const { error } = await getSupabaseServer()
     .from(source)
     .upsert(clean, conflict ?? {});
@@ -226,7 +261,7 @@ export async function POST(req: Request) {
     const rows: unknown[] = Array.isArray(body?.rows) ? body.rows : [];
     const replace: boolean = body?.replace === true;
 
-    const SOURCES: SourceType[] = ['manufacturer_sales', 'dealer_shipments', 'hospital_intakes', 'procurement_data'];
+    const SOURCES: SourceType[] = ['manufacturer_sales', 'dealer_shipments', 'hospital_intakes', 'procurement_data', 'dealers', 'hospitals', 'dealer_hospital_mapping'];
     if (!source || !SOURCES.includes(source) || rows.length === 0) {
       return NextResponse.json(
         { ok: false, error: '参数缺失：需要 source 和 rows（非空数组）' },
@@ -238,14 +273,15 @@ export async function POST(req: Request) {
     const { imported, replaced } = await processRows(source, normalized, replace);
 
     // 导入后自动重算评分与风险
-    const compute = await runCompute();
+    const dimensional = ['dealers', 'hospitals', 'dealer_hospital_mapping'].includes(source);
+    const compute = dimensional ? null : await runCompute();
 
     return NextResponse.json({
       ok: true,
       source,
       imported,
       replaced: replaced ?? false,
-      compute,
+      ...(compute ? { compute } : {}),
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : '未知错误';

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { Card, CardTitle } from '@/components/ui/card';
 import { StatusBadge, ScoreBadge } from '@/components/ui/badge';
 import { TrendChart } from '@/components/dealer/TrendChart';
-import { getDealerDetail, getLatestMonth } from '@/lib/queries';
+import { getDealerDetail, getLatestMonth, getDealerHospitalMapping } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,10 @@ export default async function DealerDetailPage({
 }: {
   params: { id: string };
 }) {
-  const detail = await getDealerDetail(params.id);
+  const [detail, mapping] = await Promise.all([
+    getDealerDetail(params.id),
+    getDealerHospitalMapping(params.id),
+  ]);
   if (!detail) notFound();
 
   const latestMonth = await getLatestMonth();
@@ -73,6 +76,40 @@ export default async function DealerDetailPage({
           </div>
         </Card>
       ))}
+
+      {/* 经销商-终端医院对应关系 */}
+      {mapping.length > 0 && (
+        <Card>
+          <CardTitle>终端医院对应关系（{mapping.length} 家）</CardTitle>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                  <th className="px-3 py-2 font-medium">医院名称</th>
+                  <th className="px-3 py-2 font-medium">省份</th>
+                  <th className="px-3 py-2 font-medium">生效日期</th>
+                  <th className="px-3 py-2 font-medium">失效日期</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mapping.map((m, i) => (
+                  <tr key={i} className="border-b border-border/50 last:border-0">
+                    <td className="px-3 py-2">{m.hospital_name}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{m.province ?? '—'}</td>
+                    <td className="px-3 py-2 tabular-nums">{m.effective_from}</td>
+                    <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                      {m.effective_to ?? '至今'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            带时间维度：医院的对应经销商可能更换（如集采切换）。可通过「数据导入 → 对应关系」维护。
+          </p>
+        </Card>
+      )}
     </div>
   );
 }

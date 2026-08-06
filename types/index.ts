@@ -130,3 +130,12 @@ export interface AiReport {
   token_usage: Record<string, unknown> | null;
   created_at?: string;
 }
+
+/** 经销商-终端医院对应关系（带时间维度，支持医院更换经销商） */
+export interface DealerHospitalMapping {
+  id?: string;
+  dealer_id: string;
+  hospital_id: string;
+  effective_from: string;  // 'YYYY-MM-DD'
+  effective_to?: string | null;  // null = 至今
+}
