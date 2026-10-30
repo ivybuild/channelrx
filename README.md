@@ -45,7 +45,6 @@
 ```bash
 npm install
 cp .env.example .env.local   # 填入 Supabase URL 与密钥
-npm run seed                 # 导入演示数据（10 经销商 × 2 产品 × 18 个月）
 npm run dev                  # http://localhost:3000
 ```
 
@@ -65,7 +64,7 @@ curl -X POST http://localhost:3000/api/compute
 
 ## 路线图
 
-- [x] M1 数据可用（建表 + Mock 数据 18 个月）
+- [x] M1 数据可用（建表 + 数据导入）
 - [x] M2 评分可算（评分引擎 + 风险识别 + /api/compute）
 - [x] M3 页面可看（总览 / 经销商 / 详情 / 风险中心 / 报告 / 导入）
 - [x] M5 线上部署（Vercel + datarecord.me）
